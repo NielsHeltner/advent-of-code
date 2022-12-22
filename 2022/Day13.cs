@@ -20,6 +20,27 @@ public class Day13
         }
 
         Console.WriteLine(sumCorrectIndices);
+
+        var dividerPackets = new List<List>
+        {
+            new List(new List<IItem> {new List(new List<IItem> {new Integer(2)})}),
+            new List(new List<IItem> {new List(new List<IItem> {new Integer(6)})}),
+        };
+
+        var comparer = Comparer<IItem>.Create((left, right) => Compare(left, right));
+
+        var packets = pairs
+            .SelectMany(x => new[]{x.left, x.right})
+            .Concat(dividerPackets)
+            .OrderBy(x => x, comparer)
+            .ToList();
+        
+        var dividerIndices = packets
+            .Select((x, i) => (x, i: i + 1))
+            .Where(x => dividerPackets.Contains(x.x))
+            .Select(x => x.i)
+            .ToList();
+        Console.WriteLine(dividerIndices.Aggregate((acc, ele) => acc * ele));
     }
 
     int Compare(IItem left, IItem right)
