@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace AdventOfCode;
 
 public class Day13
@@ -57,28 +59,35 @@ public class Day13
 
     List Parse(string input)
     {
-        var enumerator = input.Substring(1).GetEnumerator();
-        return ParseCore(enumerator);
+        return ParseList(new Queue<char>(input));
     }
 
-    List ParseCore(IEnumerator<char> input)
+    List ParseList(Queue<char> input)
     {
         var items = new List<IItem>();
-        while (input.MoveNext())
+        input.Dequeue(); // skip first [
+        while (input.TryPeek(out var c) && c != ']')
         {
-            var c = input.Current;
             if (c == '[')
-            {
-                var inner = ParseCore(input);
-                items.Add(inner);
-            }
-            if (c == ']')
-                return new List(items);
-            if (int.TryParse(c.ToString(), out var integer))
-                items.Add(new Integer(integer));
+                items.Add(ParseList(input));
+            else if (char.IsDigit(c))
+                items.Add(ParseInt(input));
+            else
+                input.Dequeue();
         }
 
-        throw new Exception();
+        input.Dequeue();
+        return new List(items);
+    }
+
+    Integer ParseInt(Queue<char> input)
+    {
+        var intTokens = new StringBuilder();
+        while (char.IsDigit(input.Peek()))
+            intTokens.Append(input.Dequeue());
+
+        var value = int.Parse(intTokens.ToString());
+        return new Integer(value);
     }
     
     public record Pair(IItem left, IItem right);
