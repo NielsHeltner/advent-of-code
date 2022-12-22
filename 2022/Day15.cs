@@ -49,35 +49,89 @@ public class Day15
         }
 
         const int max = 4000000;
-        var notScanned = new HashSet<Position>();
-        for (var x = 0; x <= max; x++)
-            for (var y = 0; y <= max; y++)
-                notScanned.Add(new Position(x, y));
-        foreach (var (sensor, beacon) in pairs)
+
+        var circles = pairs.Select(x => 
         {
+            var sensor = x.Item1;
+            var beacon = x.Item2;
+
             var dx = Math.Abs(sensor.X - beacon.X);
             var dy = Math.Abs(sensor.Y - beacon.Y);
 
-            var reach = dx + dy;
+            var radius = dx + dy;
 
-            for (var x = Math.Max(-reach, 0); x < Math.Min(reach, max); x++)
+            return new Circle(sensor.X, sensor.Y, radius);
+        }).ToList();
+
+        var candidates = new HashSet<Position>();
+
+        foreach (var circle in circles)
+        {
+            foreach (var circle2 in circles)
             {
-                var y = Math.Max(Math.Abs(x) - reach, 0);
-                var maxY = Math.Min(Math.Abs(y), 0);
-                for (; y <= maxY; y++)
-                {
-                    var xPos = sensor.X + x;
-                    var yPos = sensor.Y + y;
+                if (circle == circle2)
+                    continue;
+                
+                var dx = Math.Abs(circle.X - circle2.X);
+                var xSign = Math.Sign(dx);
+                var dy = Math.Abs(circle.Y - circle2.Y);
+                var distance = dx + dy;
 
-                    notScanned.Remove(new Position(xPos, yPos));
+                var distanceForGap = circle.R + circle2.R + 2;
+                if (distance == distanceForGap)
+                {
+                    var startX = Math.Max(circle.X - circle.R, circle2.X - circle2.R);
+                    var endX = Math.Min(circle.X + circle.R, circle2.X + circle2.R);
+
+                    var startY = Math.Max(circle.Y - circle.R, circle2.Y - circle2.R);
+                    var endY = Math.Min(circle.Y + circle.R, circle2.Y + circle2.R);
+                    
+                    for (var y = startY; y < endY; y++)
+                    {
+                        var distCenter = Math.Abs(circle.Y - y);
+                        var outsideParameter = circle.R + 1 - distCenter;
+
+                        var x = circle.X + (outsideParameter * xSign);
+                        if (x >= 0 && x <= max &&
+                            x >= startX && x <= endX &&
+                            y >= 0 && y <= max)
+                        {
+                            candidates.Add(new Position(x, y));
+                        }
+                    }
                 }
             }
         }
 
+
         var scannedNonBeacons = scanned[rowOfInterest].Values.Where(isBeacon => !isBeacon).Count();
         Console.WriteLine(scannedNonBeacons);
 
-        var targetBeacon = notScanned.Single();
+        var targetBeacon = candidates
+            .Where(x => !ContainsPos(circles, x))
+            .Single();
+        var frequency = ((long)targetBeacon.X * max) + targetBeacon.Y;
+        Console.WriteLine(frequency);
+    }
+
+    bool ContainsPos(List<Circle> circles, Position position)
+    {
+        foreach (var circle in circles)
+        {
+            if (ContainsPos(circle, position))
+                return true;
+        }
+
+        return false;
+    }
+
+    bool ContainsPos(Circle circle, Position position)
+    {
+        var dx = Math.Abs(position.X - circle.X);
+        var dy = Math.Abs(position.Y - circle.Y);
+        var distance = dx + dy;
+
+        return distance <= circle.R;
     }
 
     (Sensor, Beacon) Parse(string input)
@@ -105,4 +159,5 @@ public class Day15
     record Sensor(int X, int Y) : Element(X, Y);
     record Beacon(int X, int Y) : Element(X, Y);
     record Position(int X, int Y) : Element(X, Y);
+    record Circle(int X, int Y, int R): Element(X, Y);
 }
