@@ -4,6 +4,6 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        await new Day15().RunAsync();
+        await new Day16().RunAsync();
     }
 }
